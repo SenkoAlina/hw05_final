@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Технологии{% endblock %}
+{% block content %}
+{% comment %} Колонки с отступом сверху и снизу {% endcomment %}
+<div class="row">
+  <h1>Вот что я умею</h1>
+  {% comment %}
+    Боковой блок со списком технологий 
+    Займет всю ширину блока на мобильном
+    и 25% при размерах экрана ≥768px
+  {% endcomment %}
+  <aside class="col-12 col-md-3">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        Python
+      </li>
+      <li class="list-group-item">
+        Django
+      </li>
+    </ul>
+  </aside>
+  {% comment %}
+    Статья  
+    Займет всю ширину блока на мобильном
+    и 75% при размерах экрана ≥768px
+  {% endcomment %}
+  <article class="col-12 col-md-9">
+    <p>Пока что в моей голове "легкий" бардак, а еще я сильно отстаю в прохождении спринта, 
+      но когда я наконец вернусь в сроки и разложу все по полочкам, то обязательно расскажу, какими инструментами я пользовалась для создания этого сайта.</p>
+    <p>А пока как-то так:)</p>
+    <p style="text-align: center;">
+    <img src="{% static 'img/tech.jpg' %}" width="600" height="750" alt="img">
+    </p>
+  </article>
+</div>
+{% endblock %}

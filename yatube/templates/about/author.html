@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  Об авторе
+{% endblock %}
+{% block content %}
+  <h1>Об авторе</h1>
+  <p>Всем привет! Меня зовут Алина. Я учусь программированию на языке Python, проходя курсы Яндекс.Практикума.</p>
+  <p>Если интересно, то вы можете посмотреть мои работы на сайте github.com:</p>
+  <a href="http://github.com/SenkoAlina" target="_blank"> http://github.com/SenkoAlina</a>
+  <p style="text-align: center;">
+    <img src="{% static 'img/author.jpg' %}" width="600" height="750" alt="img">
+  </p>
+{% endblock %}
