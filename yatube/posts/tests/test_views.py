@@ -20,7 +20,6 @@ class ViewsTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-
         super().setUpClass()
         cls.group = Group.objects.create(
             title='test_group',
@@ -70,7 +69,6 @@ class ViewsTestCase(TestCase):
             'username': f'{cls.user.username}'})
 
     def setUp(self) -> None:
-
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -78,14 +76,15 @@ class ViewsTestCase(TestCase):
         self.follower_client.force_login(self.follower)
 
     def test_paginator_correct(self):
-
         posts_list = []
         for x in range(1, POSTS_COUNT):
             posts_list.append(
                 Post(text=f'text{x}', author=self.user, group=self.group))
-
         Post.objects.bulk_create(posts_list)
-
+        Follow.objects.create(
+            user=self.follower,
+            author=self.user
+        )
         urls = [
             self.url_index,
             self.url_group,
@@ -93,20 +92,17 @@ class ViewsTestCase(TestCase):
         ]
         for url in urls:
             with self.subTest(url=url):
-                response = self.guest_client.get(url)
+                response = self.follower_client.get(url)
                 page_obj = response.context.get('page_obj')
-
                 self.assertEqual(len(page_obj), POSTS_PER_PAGE)
 
-                response_second = self.guest_client.get(url + '?page=2')
+                response_second = self.follower_client.get(url + '?page=2')
                 page_obj_second = response_second.context.get('page_obj')
-
                 self.assertEqual(len(page_obj_second),
                                  POSTS_COUNT_ON_SECOND_PAGE)
 
     def test_templates(self):
         """URL-адрес использует соответствующий шаблон."""
-
         templates_page_names = {
             self.url_index: 'posts/index.html',
             self.url_group: 'posts/group_list.html',
@@ -116,7 +112,6 @@ class ViewsTestCase(TestCase):
             self.url_edit: 'posts/create_post.html',
             self.url_follow_index: 'posts/follow.html',
         }
-
         for reverse_name, template in templates_page_names.items():
             with self.subTest(template=template):
                 response = self.authorized_client.get(reverse_name)
@@ -132,36 +127,29 @@ class ViewsTestCase(TestCase):
             self.post.id: post.id,
             self.post.image: post.image
         }
-
         for expected_value, field in context_objects.items():
             with self.subTest(field=field):
                 self.assertEqual(expected_value, field)
 
     def test_index_page_obj_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-
         response = self.authorized_client.get(self.url_index)
-
         first_object = response.context['page_obj'][0]
         self.check_post(first_object)
 
     def test_group_list_group_correct_context(self):
         """Шаблон group сформирован с правильным контекстом."""
-
         response = self.authorized_client.get(self.url_group)
-
         first_object = response.context['page_obj'][0]
         self.check_post(first_object)
 
         title = response.context.get('group').title
         description = response.context.get('group').description
-
         self.assertEqual(title, self.group.title)
         self.assertEqual(description, self.group.description)
 
     def test_group_has_not_wrong_post(self):
         """В группу не попадает пост, не принадлежащий этой группе."""
-
         group = Group.objects.create(
             title='test_group_2',
             slug='test_slug_2',
@@ -169,29 +157,22 @@ class ViewsTestCase(TestCase):
         )
         url = reverse('posts:group_list', kwargs={
             'slug': f'{group.slug}'})
-
         response = self.authorized_client.get(url)
-
         self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_profile_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-
         response = self.authorized_client.get(self.url_profile)
-
         first_object = response.context['page_obj'][0]
         self.check_post(first_object)
 
         author = response.context.get('author')
-
         self.assertEqual(author, self.post.author)
 
     def test_detail_post_correct_context(self):
         """Шаблон detail сформирован с правильным контекстом 'post'."""
-
         response = self.authorized_client.get(self.url_detail)
         post = response.context.get('post')
-
         self.check_post(post)
 
         comment = response.context.get('comments').last()
@@ -199,63 +180,50 @@ class ViewsTestCase(TestCase):
 
     def test_create_form_correct_context(self):
         """Шаблон create сформирован с правильным контекстом 'form'."""
-
         response = self.authorized_client.get(self.url_create)
-
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
         }
-
         for value, expected in form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
-
         form = response.context.get('form')
-
         self.assertIsInstance(form, PostForm)
 
     def test_edit_form_correct_context(self):
         """Шаблон edit сформирован с правильным контекстом 'form'."""
-
         response = self.authorized_client.get(self.url_edit)
-
         form = response.context.get('form')
-
         self.assertIsInstance(form, PostForm)
         self.assertEqual(form.instance, self.post)
 
         is_edit = response.context.get('is_edit')
-
         self.assertIsInstance(is_edit, bool)
         self.assertEqual(is_edit, True)
 
     def test_follow_index_context_for_follower(self):
-
+        """follow_index сформирован с правильным контекстом для подписчика."""
         Follow.objects.create(
             user=self.follower,
             author=self.user
         )
         response = self.follower_client.get(self.url_follow_index)
         first_object = response.context['page_obj'][0]
-
         self.check_post(first_object)
 
     def test_follow_index_context_for_not_follower(self):
-
+        """follow_index сформирован с правильным контекстом для гостя."""
         not_follower = User.objects.create_user(username='not_follower')
         not_follower_client = Client()
         not_follower_client.force_login(not_follower)
-
         response = not_follower_client.get(self.url_follow_index)
-
         self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_follow(self):
-
+        """Тестирование функции подписки на автора"""
         self.follower_client.get(self.url_follow)
-
         follow = Follow.objects.filter(
             user=self.follower,
             author=self.user
@@ -263,13 +231,12 @@ class ViewsTestCase(TestCase):
         self.assertTrue(follow.exists())
 
     def test_unfollow(self):
-
+        """Тестирование функции отписки от автора"""
         Follow.objects.create(
             user=self.follower,
             author=self.user
         )
         self.follower_client.get(self.url_unfollow)
-
         follow = Follow.objects.filter(
             user=self.follower,
             author=self.user

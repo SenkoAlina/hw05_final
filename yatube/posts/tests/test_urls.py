@@ -35,7 +35,6 @@ class PostsURLTests(TestCase):
         cls.url_unfollow = f'/profile/{cls.following.username}/unfollow/'
 
     def setUp(self) -> None:
-
         self.guest_client = Client()
 
         self.user = User.objects.create_user(username='Noname')
@@ -47,7 +46,6 @@ class PostsURLTests(TestCase):
 
     def test_urls_for_guest_client(self):
         """Statuscode страниц для не авторизованного пользователя."""
-
         urls = {
             self.url_index: HTTPStatus.OK,
             self.url_group: HTTPStatus.OK,
@@ -67,7 +65,6 @@ class PostsURLTests(TestCase):
 
     def test_urls_for_authorized_client(self):
         """Statuscode страниц для авторизованного пользователя."""
-
         urls = {
             self.url_create: HTTPStatus.OK,
             self.url_edit: HTTPStatus.FOUND,
@@ -82,13 +79,11 @@ class PostsURLTests(TestCase):
 
     def test_urls_for_author(self):
         """Страница /edit/ доступна автору."""
-
         response = self.author_client.get(self.url_edit)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_users_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-
         templates_url_names = {
             self.url_index: 'posts/index.html',
             self.url_group: 'posts/group_list.html',
@@ -106,11 +101,11 @@ class PostsURLTests(TestCase):
 
     def test_cache_index_page(self):
         """Проверка работы cache на главной странице"""
-
         response_before_cache = self.guest_client.get(self.url_index).content
         self.post.delete()
         response_after_cache = self.guest_client.get(self.url_index).content
         self.assertEqual(response_before_cache, response_after_cache)
+
         cache.clear()
         response_after_clear_cache = self.guest_client.get(
             self.url_index).content

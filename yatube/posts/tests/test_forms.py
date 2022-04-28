@@ -9,7 +9,6 @@ from django.urls import reverse
 from posts.forms import PostForm
 from posts.models import Comment, Group, Post, User
 
-
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
@@ -17,9 +16,7 @@ class PostBaseTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-
         super().setUpClass()
-
         cls.group = Group.objects.create(
             title='test_group',
             slug='test_slug',
@@ -42,7 +39,6 @@ class PostBaseTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
@@ -60,7 +56,6 @@ class PostFormTests(PostBaseTestCase):
 
     def test_labels_and_help_text(self):
         """Проверка labels и help_text."""
-
         fields = [
             'text',
             'group',
@@ -79,7 +74,6 @@ class PostFormTests(PostBaseTestCase):
 
     def test_create_post(self):
         """Валидная форма создает запись в Post."""
-
         posts_count = Post.objects.count()
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x02\x00'
@@ -99,18 +93,15 @@ class PostFormTests(PostBaseTestCase):
             'group': self.group.pk,
             'image': uploaded,
         }
-
         response = self.authorized_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True)
-
         self.assertRedirects(response, reverse('posts:profile', kwargs={
             'username': f'{self.user.username}'}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
 
         post = Post.objects.latest('id')
-
         self.assertTrue(post.text, form_data['text'])
         self.assertTrue(post.group, form_data['group'])
         self.assertTrue(post.image, 'posts/small.gif')
@@ -118,7 +109,6 @@ class PostFormTests(PostBaseTestCase):
 
     def test_edit_post_author(self):
         """Валидная форма редактирует запись от имени автора."""
-
         posts_count = Post.objects.count()
         new_group = Group.objects.create(
             title='test_new_group',
@@ -138,7 +128,6 @@ class PostFormTests(PostBaseTestCase):
             content=small_gif,
             content_type='image/gif'
         )
-
         form_data = {
             'text': 'Новый текст',
             'group': new_group.pk,
@@ -149,7 +138,6 @@ class PostFormTests(PostBaseTestCase):
                 'post_id': f'{self.post.pk}'}),
             data=form_data,
             follow=True)
-
         self.assertRedirects(response, reverse('posts:post_detail', kwargs={
             'post_id': f'{self.post.pk}'}))
         self.assertEqual(Post.objects.count(), posts_count)
@@ -162,25 +150,21 @@ class PostFormTests(PostBaseTestCase):
 
     def test_edit_post_not_author(self):
         """Валидная форма не редактирует запись, если пользователь не автор."""
-
         posts_count = Post.objects.count()
         new_group = Group.objects.create(
             title='test_new_group',
             slug='test_new_group_slug',
             description='test_new_group_description',
         )
-
         form_data = {
             'text': 'Новый текст',
             'group': new_group.pk,
         }
-
         response = self.authorized_client.post(
             reverse('posts:post_edit', kwargs={
                 'post_id': f'{self.post.pk}'}),
             data=form_data,
             follow=True)
-
         self.assertRedirects(response, reverse('posts:post_detail', kwargs={
             'post_id': f'{self.post.pk}'}))
         self.assertEqual(Post.objects.count(), posts_count)
@@ -192,25 +176,21 @@ class PostFormTests(PostBaseTestCase):
 
     def test_edit_post_not_authorized(self):
         """Пост не редактируется не авторизованным."""
-
         posts_count = Post.objects.count()
         new_group = Group.objects.create(
             title='test_new_group',
             slug='test_new_group_slug',
             description='test_new_group_description',
         )
-
         form_data = {
             'text': 'Новый текст',
             'group': new_group.pk,
         }
-
         response = self.guest_client.post(
             reverse('posts:post_edit', kwargs={
                 'post_id': f'{self.post.pk}'}),
             data=form_data,
             follow=True)
-
         self.assertRedirects(response,
                              '/auth/login/?next=/posts/1/edit/')
         self.assertEqual(Post.objects.count(), posts_count)
@@ -219,21 +199,35 @@ class PostFormTests(PostBaseTestCase):
         self.assertTrue(post.author, self.post.author)
 
     def test_comment_post_authorized(self):
-
+        """Пост комментируется авторизованным."""
         post = self.post
         form_data = {
             'text': 'Текстовый комментарий',
             post: post,
         }
-
         response = self.authorized_client.post(
             reverse('posts:add_comment', kwargs={
                 'post_id': f'{self.post.pk}'}),
             data=form_data,
             follow=True)
-
         self.assertRedirects(response, reverse('posts:post_detail', kwargs={
             'post_id': f'{self.post.pk}'}))
 
         comment = Comment.objects.latest('id')
         self.assertEqual(comment.text, form_data['text'])
+        self.assertEqual(Comment.objects.count(), 1)
+
+    def test_comment_post_not_authorized(self):
+        """Пост комментируется не авторизованным."""
+        post = self.post
+        form_data = {
+            'text': 'Текстовый комментарий',
+            post: post,
+        }
+        response = self.guest_client.post(
+            reverse('posts:add_comment', kwargs={
+                'post_id': f'{self.post.pk}'}),
+            data=form_data,
+            follow=True)
+        self.assertRedirects(response, '/auth/login/?next=/posts/1/comment/')
+        self.assertEqual(Comment.objects.count(), 0)
