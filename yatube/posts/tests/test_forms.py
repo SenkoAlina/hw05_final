@@ -218,7 +218,7 @@ class PostFormTests(PostBaseTestCase):
         self.assertEqual(Comment.objects.count(), 1)
 
     def test_comment_post_not_authorized(self):
-        """Пост комментируется не авторизованным."""
+        """Пост не комментируется не авторизованным."""
         post = self.post
         form_data = {
             'text': 'Текстовый комментарий',

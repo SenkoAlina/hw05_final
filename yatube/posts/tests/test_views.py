@@ -89,6 +89,7 @@ class ViewsTestCase(TestCase):
             self.url_index,
             self.url_group,
             self.url_profile,
+            self.url_follow_index,
         ]
         for url in urls:
             with self.subTest(url=url):
